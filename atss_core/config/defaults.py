@@ -24,6 +24,7 @@ _C.MODEL = CN()
 _C.MODEL.RPN_ONLY = False
 _C.MODEL.MASK_ON = False
 _C.MODEL.ATSS_ON = False
+_C.MODEL.DSL_ON = False
 _C.MODEL.FCOS_ON = False
 _C.MODEL.RETINANET_ON = False
 _C.MODEL.KEYPOINT_ON = False
@@ -284,6 +285,37 @@ _C.MODEL.RESNETS.STAGE_WITH_DCN = (False, False, False, False)
 _C.MODEL.RESNETS.WITH_MODULATED_DCN = False
 _C.MODEL.RESNETS.DEFORMABLE_GROUPS = 1
 
+
+# ---------------------------------------------------------------------------- #
+# DSL Options
+# ---------------------------------------------------------------------------- #
+_C.MODEL.DSL = CN()
+_C.MODEL.DSL.NUM_CLASSES = 81  # the number of classes including background
+
+# Anchor parameter
+_C.MODEL.DSL.FPN_STRIDES = [8, 16, 32, 64, 128]
+
+# Head parameter
+_C.MODEL.DSL.NUM_CONVS = 4
+_C.MODEL.DSL.USE_DCN_IN_TOWER = False
+
+# Focal loss parameter
+_C.MODEL.DSL.LOSS_ALPHA = 0.25
+_C.MODEL.DSL.LOSS_GAMMA = 2.0
+
+# topk for selecting candidate positive samples from each level
+_C.MODEL.DSL.TOPK = 9
+
+# Weight for bbox_regression loss
+_C.MODEL.DSL.REG_LOSS_WEIGHT = 2.0
+
+# Inference parameter
+_C.MODEL.DSL.PRIOR_PROB = 0.01
+_C.MODEL.DSL.INFERENCE_TH = 0.05
+_C.MODEL.DSL.NMS_TH = 0.6
+_C.MODEL.DSL.PRE_NMS_TOP_N = 1000
+
+
 # ---------------------------------------------------------------------------- #
 # ATSS Options
 # ---------------------------------------------------------------------------- #
@@ -478,7 +510,7 @@ _C.SOLVER.WARMUP_FACTOR = 1.0 / 3
 _C.SOLVER.WARMUP_ITERS = 500
 _C.SOLVER.WARMUP_METHOD = "linear"
 
-_C.SOLVER.CHECKPOINT_PERIOD = 2500
+_C.SOLVER.CHECKPOINT_PERIOD = 10000
 
 # Number of images per batch
 # This is global, so if we have 8 GPUs and IMS_PER_BATCH = 16, each GPU will

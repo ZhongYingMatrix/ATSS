@@ -29,3 +29,5 @@ dist/
 /datasets
 /models
 /experiments
+/training_dir
+/.vscode

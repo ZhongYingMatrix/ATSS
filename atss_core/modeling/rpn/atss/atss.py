@@ -203,6 +203,7 @@ class ATSSModule(torch.nn.Module):
         self.anchor_generator = make_anchor_generator_atss(cfg)
 
     def forward(self, images, features, targets=None):
+        import pdb; pdb.set_trace()
         box_cls, box_regression, centerness = self.head(features)
         anchors = self.anchor_generator(images, features)
  
