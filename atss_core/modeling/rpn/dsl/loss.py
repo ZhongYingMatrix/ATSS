@@ -24,6 +24,7 @@ class DSLLossComputation(object):
         self.topk = cfg.MODEL.DSL.TOPK
         self.strides = cfg.MODEL.DSL.FPN_STRIDES
         self.cls_out_channels = cfg.MODEL.DSL.NUM_CLASSES - 1
+        self.reg_loss_weight = cfg.MODEL.DSL.REG_LOSS_WEIGHT
         self.loss_centerness = nn.BCEWithLogitsLoss(reduction="sum")
         self.cls_loss_func = SigmoidFocalLoss(cfg.MODEL.DSL.LOSS_GAMMA,
                                               cfg.MODEL.DSL.LOSS_ALPHA)
@@ -35,7 +36,7 @@ class DSLLossComputation(object):
         gt_labels = [target_im.get_field('labels') for target_im in targets]
         candidate_idxs = self.get_candidate_idxs(gt_bboxes, all_level_points)
 
-        loss_bbox, num_pos = 0, 0
+        loss_bbox, num_pos, num_ctr_pos = 0, 0, 0
         cls_targets = [torch.zeros_like(cls_score) for cls_score in cls_scores]
         num_imgs = cls_scores[0].size(0)
         ctr_pred_lst, ctr_target_lst = [], []
@@ -142,6 +143,7 @@ class DSLLossComputation(object):
             ctr_pred_lst.append(ctrness_pred)
             reweight_factor = centerness
             num_pos += reweight_factor.sum()
+            num_ctr_pos += keep_idxmask.sum()
             loss_bbox += ((1 - _de_bbox_gt[keep_idxmask])
                           * reweight_factor).sum()
 
@@ -169,9 +171,11 @@ class DSLLossComputation(object):
         num_gpus = get_num_gpus()
         total_num_pos = reduce_sum(num_pos).item()
         num_pos_avg_per_gpu = max(total_num_pos / float(num_gpus), 1.0)
+        total_num_ctr_pos = reduce_sum(num_ctr_pos).item()
+        num_ctr_pos_avg_per_gpu = max(total_num_ctr_pos / float(num_gpus), 1.0)
         loss_centerness = self.loss_centerness(
             torch.cat(ctr_pred_lst), torch.cat(ctr_target_lst))
-        loss_centerness /= num_pos_avg_per_gpu
+        loss_centerness /= num_ctr_pos_avg_per_gpu
         loss_bbox /= num_pos_avg_per_gpu
         flatten_cls_scores = [
             cls_score.permute(0, 2, 3, 1).reshape(-1, self.cls_out_channels)
@@ -186,7 +190,7 @@ class DSLLossComputation(object):
         loss_cls = self.py_sigmoid_focal_loss(
             flatten_cls_scores, flatten_cls_targets).sum() / num_pos_avg_per_gpu
 
-        return loss_cls, loss_bbox, loss_centerness
+        return loss_cls, loss_bbox * self.reg_loss_weight, loss_centerness
 
     def get_candidate_idxs(self, gt_bboxes, all_level_points):
         # img * [lvl * idxs(9*nums_gt)]

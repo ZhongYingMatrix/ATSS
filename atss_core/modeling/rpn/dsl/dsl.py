@@ -90,7 +90,7 @@ class DSLHead(torch.nn.Module):
             logits.append(self.cls_logits(cls_tower))
 
             bbox_pred = self.scales[i](self.bbox_pred(box_tower))
-            bbox_pred = F.relu(bbox_pred)
+            bbox_pred = F.relu(bbox_pred) * self.fpn_strides[i]
             bbox_reg.append(bbox_pred)
 
             centerness.append(self.centerness(box_tower))
